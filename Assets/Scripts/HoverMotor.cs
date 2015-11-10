@@ -1,73 +1,63 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class HoverMotor : MonoBehaviour {
+public class HoverMotor : MonoBehaviour 
+{
 
-	public static float batteryLevel = 0f;
-
-	 float Speed = 0f; 
-	 float maxSpeed = 40;
-	 float minSpeed = 1f; 
-	 float hoverForce = 65f;
-	 float hoverHeight = 1f;
-
-	 bool jumped = false;
-	 float jumpForce = 90.0f;
+	public float batteryLevel = 0f,
+	Speed = 0f, maxSpeed = 40, minSpeed = 1f, hoverForce = 15.0f, 
+	jumpForce = 5.0f;
+	 float hoverHeight = 3f;
+	 
+	 // Boolean to control when the player can jump. 
+	public bool isGrouded = false;
+	public LayerMask playerMask;
 
 	 float maxAcceleration = 8f; // Controls the acceleration
 	
-	private Rigidbody speedsterRigidbody;
+	private Rigidbody myBody;
+	private Transform myTrans, tagGround;
 
 	// Use this for initialization
 	void Awake () 
 	{
-		speedsterRigidbody= GetComponent <Rigidbody>();
+		myBody= GetComponent <Rigidbody>();
+		myTrans = this.transform;
+		tagGround = GameObject.Find(this.name +"/tag_ground").transform;
 	
 	}
-
-	void OnCollisionEnter(Collider other)
-	{
-		if (other.tag == "Battery")
-		{
-			batteryLevel += 25f;
-			
-		}
-		if (other.tag == "Enemy")
-		{
-			Debug.Log("enemy");
-			batteryLevel -= 50f;
-		}
-		Destroy (other.gameObject);
-	}
 	
-	// Update is called once per frame
-	void Update () 
-	{
-		Speed += maxAcceleration* Time.deltaTime;
-		Speed = Mathf.Clamp(Speed,minSpeed,maxSpeed);
-
-
-		//Touch myTouch = Input.GetTouch(0);
-
-
-		if(Input.touchCount > 0 )
-		{
-			Touch myTouch = Input.GetTouch(0);
-			if(myTouch.phase == TouchPhase.Began)
-			{
-				jumped=true;
-			}
-			
-		}
-
-
-
-
-	}
-
 
 
 	void FixedUpdate()
+	{
+		Speed += maxAcceleration* Time.deltaTime;
+		Speed = Mathf.Clamp(Speed,minSpeed,maxSpeed);
+		
+		isGrouded = Physics.Linecast(myTrans.position, tagGround.position, playerMask); 
+		
+		Hover();
+		
+		if(Input.GetButtonDown("Jump"))
+		{
+			Jump();
+		}
+		
+		Vector3 moveVel = myBody.velocity;
+		moveVel.x = Speed;
+		myBody.velocity = moveVel;
+
+	}
+	
+	// Function to jump
+	public void Jump()
+	{
+		if(isGrouded)
+		myBody.velocity += Vector3.up * jumpForce;
+	}
+	
+	//The hover function
+	void Hover()
 	{
 		Ray ray = new Ray(transform.position, -transform.up);
 		RaycastHit hit;
@@ -76,18 +66,7 @@ public class HoverMotor : MonoBehaviour {
 		{
 		   float proportionalHeight = (hoverHeight - hit.distance)/ hoverHeight;
 			Vector3 appliedHoverForce = Vector3.up * proportionalHeight * hoverForce;
-			speedsterRigidbody.AddForce(appliedHoverForce);
+			myBody.AddForce(appliedHoverForce);
 		}
-
-		if(jumped)
-		{
-			speedsterRigidbody.AddForce(Vector3.up * jumpForce * maxAcceleration, ForceMode.Force);
-			jumped = false;
-		}
-
-
-
-		speedsterRigidbody.AddForce( Speed,0f, 0f);
-
 	}
 }
